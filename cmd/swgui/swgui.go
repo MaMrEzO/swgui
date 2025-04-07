@@ -23,8 +23,10 @@ func main() {
 		flag.CommandLine, // which FlagSet to parse
 		2,                // min length
 		map[string]string{ // User-defined env-flag map
-			"SWGUI_IP":   "ip",
-			"SWGUI_PORT": "port",
+			"SWGUI_IP":     "ip",
+			"SWGUI_PORT":   "port",
+			"SWGUI_SCHEMA": "schema",
+			"SWGUI_TITLE":  "title",
 		},
 		true, // show env variable key in usage
 		true, // show env variable value in usage
@@ -33,6 +35,8 @@ func main() {
 	ver := flag.Bool("version", false, "Show version and exit.")
 	port := flag.Int("port", 8080, "Port number")
 	ip := flag.String("ip", "localhost", "IP to serve")
+	schema := flag.String("schema", "", "Swagger schema")
+	title := flag.String("title", "", "Swagger Title")
 
 	if err := ef.Parse(os.Args[1:]); err != nil {
 		panic(err)
@@ -44,17 +48,31 @@ func main() {
 		return
 	}
 
-	if flag.NArg() < 1 {
+	if flag.NArg() < 1 && schema == nil {
 		fmt.Println("Usage: swgui <path-to-schema>")
 		flag.PrintDefaults()
 
 		return
 	}
 
-	filePathToSchema := flag.Arg(0)
+	var filePathToSchema string
+	var swgTitle string
+
+	if schema != nil {
+		filePathToSchema = *schema
+	} else {
+		filePathToSchema = flag.Arg(0)
+	}
+
+	if title != nil {
+		swgTitle = *title
+	} else {
+		swgTitle = filePathToSchema
+	}
+
 	urlToSchema := "/" + path.Base(filePathToSchema)
 
-	swh := swgui.NewHandler(filePathToSchema, urlToSchema, "/")
+	swh := swgui.NewHandler(swgTitle, urlToSchema, "/")
 	hh := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == urlToSchema {
 			http.ServeFile(rw, r, filePathToSchema)

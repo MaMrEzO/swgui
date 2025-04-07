@@ -58,7 +58,7 @@ func main() {
 	var filePathToSchema string
 	var swgTitle string
 
-	if schema != nil {
+	if schema != nil && *schema != "" {
 		filePathToSchema = *schema
 	} else {
 		filePathToSchema = flag.Arg(0)

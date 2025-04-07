@@ -6,18 +6,37 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httptest"
+	"net/url"
+	"os"
 	"os/exec"
 	"path"
 	"runtime"
 
 	"github.com/bool64/dev/version"
+	"github.com/kouhin/envflag"
 	swgui "github.com/swaggest/swgui/v5emb"
 )
 
 func main() {
+
+	ef := envflag.NewEnvFlag(
+		flag.CommandLine, // which FlagSet to parse
+		2,                // min length
+		map[string]string{ // User-defined env-flag map
+			"SWGUI_IP":   "ip",
+			"SWGUI_PORT": "port",
+		},
+		true, // show env variable key in usage
+		true, // show env variable value in usage
+	)
+
 	ver := flag.Bool("version", false, "Show version and exit.")
-	flag.Parse()
+	port := flag.Int("port", 8080, "Port number")
+	ip := flag.String("ip", "localhost", "IP to serve")
+
+	if err := ef.Parse(os.Args[1:]); err != nil {
+		panic(err)
+	}
 
 	if *ver {
 		fmt.Printf("%s, Swagger UI %s\n", version.Info().Version, "v5.20.5")
@@ -46,12 +65,28 @@ func main() {
 		swh.ServeHTTP(rw, r)
 	})
 
-	srv := httptest.NewServer(hh)
+	listenAddr := fmt.Sprintf("%s:%d", *ip, *port)
 
-	log.Println("Starting Swagger UI server at", srv.URL)
+	srv := &http.Server{
+		Addr:    listenAddr,
+		Handler: hh,
+	}
+
+	// Construct the URL manually for logging
+	u := url.URL{
+		Scheme: "http",
+		Host:   listenAddr,
+		Path:   "/",
+	}
+
+	log.Println("Starting Swagger UI server at", u.String())
+
 	log.Println("Press Ctrl+C to stop")
 
-	if err := open(srv.URL); err != nil {
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatalf("ListenAndServe(): %v", err)
+	}
+	if err := open(u.String()); err != nil {
 		log.Println("open browser:", err.Error())
 	}
 

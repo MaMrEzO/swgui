@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/kouhin/envflag v0.0.0-20150818174321-0e9a86061649 // indirect
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
